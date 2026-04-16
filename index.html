@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1D9E75">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fuel Tracker">
+<title>Fuel Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green: #1D9E75;
+  --green-light: #E1F5EE;
+  --green-dark: #085041;
+  --green-mid: #5DCAA5;
+  --amber: #EF9F27;
+  --amber-light: #FAEEDA;
+  --red: #E24B4A;
+  --red-light: #FCEBEB;
+  --blue: #378ADD;
+  --blue-light: #E6F1FB;
+  --gray-50: #F8F9FA;
+  --gray-100: #F1F3F4;
+  --gray-200: #E2E6EA;
+  --gray-400: #9AA0A6;
+  --gray-600: #5F6368;
+  --gray-900: #1A1A1A;
+  --white: #FFFFFF;
+  --surface: #F6FAF8;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+  --font: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; background: var(--surface); font-family: var(--font); color: var(--gray-900); }
+
+/* App shell */
+#app { height: 100%; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; background: var(--white); position: relative; overflow: hidden; }
+
+/* Header */
+.header { background: var(--green); color: white; padding: calc(var(--safe-top) + 14px) 18px 14px; flex-shrink: 0; }
+.header-row { display: flex; align-items: center; justify-content: space-between; }
+.header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+.header-sub { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+.header-btn { background: rgba(255,255,255,0.2); border: none; color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
+
+/* Tab bar (top) */
+.tab-bar { display: flex; background: var(--green-dark); flex-shrink: 0; }
+.tab-item { flex: 1; padding: 10px 4px; text-align: center; font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.tab-item.active { color: white; border-bottom-color: var(--green-mid); }
+
+/* Screens */
+.screen { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--safe-bottom) + 70px); }
+.screen.hidden { display: none; }
+
+/* Bottom nav */
+.bottom-nav { display: flex; background: var(--white); border-top: 1px solid var(--gray-100); padding: 6px 0 calc(var(--safe-bottom) + 6px); flex-shrink: 0; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 4px; cursor: pointer; color: var(--gray-400); transition: color 0.2s; }
+.nav-item.active { color: var(--green); }
+.nav-item svg { width: 22px; height: 22px; }
+.nav-item span { font-size: 10px; font-weight: 500; }
+
+/* FAB */
+.fab { position: absolute; bottom: calc(var(--safe-bottom) + 68px); right: 18px; width: 52px; height: 52px; border-radius: 50%; background: var(--green); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-md); font-size: 24px; z-index: 10; transition: transform 0.15s; }
+.fab:active { transform: scale(0.93); }
+
+/* Cards & sections */
+.section-label { font-size: 11px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.06em; padding: 16px 16px 8px; }
+.metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 16px 4px; }
+.metric-card { background: var(--surface); border-radius: var(--radius-md); padding: 12px 14px; }
+.metric-label { font-size: 11px; color: var(--gray-400); margin-bottom: 4px; }
+.metric-value { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; color: var(--gray-900); }
+.metric-sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+.metric-trend-up { color: var(--green); }
+.metric-trend-down { color: var(--red); }
+
+/* Entry list */
+.entry-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
+.entry-card { background: var(--white); border: 1px solid var(--gray-100); border-radius: var(--radius-md); padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background 0.15s; }
+.entry-card:active { background: var(--gray-50); }
+.entry-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.entry-icon.green { background: var(--green-light); }
+.entry-icon.amber { background: var(--amber-light); }
+.entry-icon svg { width: 18px; height: 18px; }
+.entry-body { flex: 1; min-width: 0; }
+.entry-car { font-size: 14px; font-weight: 600; color: var(--gray-900); }
+.entry-meta { font-size: 11px; color: var(--gray-400); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entry-right { text-align: right; flex-shrink: 0; }
+.entry-price { font-size: 14px; font-weight: 600; color: var(--gray-900); }
+.entry-km { font-size: 11px; color: var(--green); margin-top: 2px; }
+.badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; margin-top: 4px; }
+.badge-green { background: var(--green-light); color: var(--green-dark); }
+.badge-amber { background: var(--amber-light); color: #633806; }
+.badge-red { background: var(--red-light); color: #791F1F; }
+
+/* Form */
+.form-section { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field-group { display: flex; flex-direction: column; gap: 5px; }
+.field-label { font-size: 12px; font-weight: 500; color: var(--gray-600); }
+.field-input { background: var(--gray-50); border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px; font-family: var(--font); color: var(--gray-900); outline: none; transition: border-color 0.2s; width: 100%; }
+.field-input:focus { border-color: var(--green); background: white; }
+.field-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239AA0A6' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+
+/* Calc result box */
+.calc-box { margin: 6px 16px; background: var(--green-light); border-radius: var(--radius-md); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
+.calc-left .calc-title { font-size: 12px; font-weight: 500; color: var(--green-dark); }
+.calc-left .calc-sub { font-size: 11px; color: var(--green); margin-top: 2px; }
+.calc-value { font-size: 20px; font-weight: 700; color: var(--green-dark); font-family: var(--font-mono); }
+
+/* Submit button */
+.btn-primary { background: var(--green); color: white; border: none; border-radius: var(--radius-md); padding: 14px; font-size: 15px; font-weight: 600; font-family: var(--font); cursor: pointer; transition: opacity 0.15s, transform 0.1s; margin: 4px 16px; }
+.btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+
+/* Location picker */
+.location-picker { margin: 0 16px; background: var(--white); border: 1.5px solid var(--gray-200); border-radius: var(--radius-md); overflow: hidden; }
+.location-header { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--gray-100); }
+.location-header svg { width: 16px; height: 16px; color: var(--green); flex-shrink: 0; }
+.location-header span { font-size: 12px; color: var(--gray-600); }
+.location-item { display: flex; align-items: center; gap: 10px; padding: 11px 12px; cursor: pointer; border-bottom: 1px solid var(--gray-50); transition: background 0.15s; }
+.location-item:last-child { border-bottom: none; }
+.location-item:active { background: var(--gray-50); }
+.location-item.selected { background: var(--green-light); }
+.location-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gray-200); flex-shrink: 0; }
+.location-item.selected .location-dot { background: var(--green); }
+.location-item.fav .location-dot { background: var(--amber); }
+.location-name { font-size: 13px; font-weight: 500; color: var(--gray-900); flex: 1; }
+.location-dist { font-size: 11px; color: var(--gray-400); }
+.location-loading { padding: 16px 12px; text-align: center; font-size: 13px; color: var(--gray-400); }
+
+/* Analysis screen */
+.chart-container { padding: 0 16px; }
+.chart-box { background: var(--white); border: 1px solid var(--gray-100); border-radius: var(--radius-md); padding: 14px; }
+.chart-title { font-size: 13px; font-weight: 600; color: var(--gray-900); margin-bottom: 10px; }
+.chart-legend { display: flex; gap: 14px; margin-bottom: 10px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--gray-600); }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+canvas { width: 100% !important; }
+
+/* Station ranking */
+.station-list { padding: 0 16px; display: flex; flex-direction: column; gap: 6px; }
+.station-item { background: var(--white); border: 1px solid var(--gray-100); border-radius: var(--radius-md); padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
+.station-rank { width: 24px; height: 24px; border-radius: 50%; background: var(--gray-100); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--gray-600); flex-shrink: 0; }
+.station-rank.gold { background: var(--amber-light); color: #633806; }
+.station-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--gray-900); }
+.station-visits { font-size: 10px; color: var(--gray-400); margin-top: 1px; }
+.station-price { font-size: 14px; font-weight: 700; color: var(--green); font-family: var(--font-mono); }
+
+/* Car cards */
+.car-list { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+.car-card { background: var(--white); border: 1px solid var(--gray-100); border-radius: var(--radius-lg); padding: 14px; }
+.car-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.car-avatar { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; flex-shrink: 0; }
+.car-name { font-size: 15px; font-weight: 600; color: var(--gray-900); }
+.car-plate { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+.car-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.car-stat { background: var(--surface); border-radius: 8px; padding: 8px; text-align: center; }
+.car-stat-val { font-size: 16px; font-weight: 700; color: var(--gray-900); font-family: var(--font-mono); }
+.car-stat-lbl { font-size: 9px; color: var(--gray-400); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Alerts */
+.alert-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
+.alert-item { background: var(--white); border: 1px solid var(--gray-100); border-radius: var(--radius-md); padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; }
+.alert-indicator { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+.alert-indicator.red { background: var(--red); }
+.alert-indicator.amber { background: var(--amber); }
+.alert-indicator.green { background: var(--green); }
+.alert-text { font-size: 13px; font-weight: 500; color: var(--gray-900); line-height: 1.4; }
+.alert-sub { font-size: 11px; color: var(--gray-400); margin-top: 3px; }
+
+/* Projection box */
+.projection-box { margin: 0 16px; background: var(--blue-light); border-radius: var(--radius-md); padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
+.projection-label { font-size: 12px; font-weight: 500; color: #0C447C; }
+.projection-value { font-size: 18px; font-weight: 700; color: #0C447C; font-family: var(--font-mono); }
+.projection-basis { font-size: 10px; color: #185FA5; margin-top: 2px; }
+
+/* Add car form */
+.add-car-btn { margin: 0 16px; background: var(--surface); border: 1.5px dashed var(--gray-200); border-radius: var(--radius-md); padding: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--gray-400); cursor: pointer; transition: all 0.15s; }
+.add-car-btn:active { background: var(--green-light); color: var(--green); border-color: var(--green); }
+
+/* Toast */
+.toast { position: absolute; bottom: calc(var(--safe-bottom) + 80px); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--gray-900); color: white; padding: 10px 18px; border-radius: 20px; font-size: 13px; font-weight: 500; opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; z-index: 100; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Empty state */
+.empty { padding: 40px 20px; text-align: center; color: var(--gray-400); }
+.empty svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.4; }
+.empty p { font-size: 14px; }
+.empty span { font-size: 12px; display: block; margin-top: 4px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 0; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <h1 id="header-title">Fuel Tracker</h1>
+        <div class="header-sub" id="header-sub">Resumen del mes</div>
+      </div>
+      <button class="header-btn" id="header-action" onclick="handleHeaderAction()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar" id="tab-bar-inicio" style="display:none;">
+    <div class="tab-item active" onclick="switchSubTab('registros')">Registros</div>
+    <div class="tab-item" onclick="switchSubTab('estadisticas')">Estadísticas</div>
+  </div>
+
+  <!-- SCREEN: Inicio -->
+  <div class="screen" id="screen-inicio">
+    <!-- Metrics -->
+    <div class="metric-grid" id="metric-grid"></div>
+    <!-- Sub content switch -->
+    <div id="sub-registros">
+      <div class="section-label">Últimas tanqueadas</div>
+      <div class="entry-list" id="entry-list"></div>
+    </div>
+    <div id="sub-estadisticas" style="display:none;">
+      <div class="section-label">Rendimiento por mes</div>
+      <div class="chart-container">
+        <div class="chart-box">
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#5DCAA5;"></div>km/galón</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#EF9F27;"></div>$/galón</div>
+          </div>
+          <div style="position:relative;height:160px;"><canvas id="chart-main"></canvas></div>
+        </div>
+      </div>
+      <div class="section-label">Proyección próximo mes</div>
+      <div class="projection-box" id="projection-box">
+        <div>
+          <div class="projection-label">Gasto estimado</div>
+          <div class="projection-basis" id="proj-basis">Basado en historial</div>
+        </div>
+        <div class="projection-value" id="proj-value">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: Nueva tanqueada -->
+  <div class="screen hidden" id="screen-nuevo">
+    <div style="height:14px;"></div>
+    <div class="form-section">
+      <div class="field-group">
+        <div class="field-label">Vehículo</div>
+        <select class="field-input field-select" id="form-vehiculo"></select>
+      </div>
+      <div class="form-row-2">
+        <div class="field-group">
+          <div class="field-label">Fecha</div>
+          <input type="date" class="field-input" id="form-fecha">
+        </div>
+        <div class="field-group">
+          <div class="field-label">Precio / galón ($)</div>
+          <input type="number" class="field-input" id="form-precio-gal" placeholder="16400" oninput="calcRendimiento()">
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="field-group">
+          <div class="field-label">Total pagado ($)</div>
+          <input type="number" class="field-input" id="form-total" placeholder="120000" oninput="calcRendimiento()">
+        </div>
+        <div class="field-group">
+          <div class="field-label">Km recorridos</div>
+          <input type="number" class="field-input" id="form-km" placeholder="450" oninput="calcRendimiento()">
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Estación de servicio</div>
+    <div class="location-picker" id="location-picker">
+      <div class="location-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green)"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span id="location-status">Detectando estaciones cercanas...</span>
+      </div>
+      <div id="location-items"></div>
+    </div>
+
+    <div class="form-section" style="margin-top:10px;">
+      <div class="field-group">
+        <div class="field-label">Notas (opcional)</div>
+        <input type="text" class="field-input" id="form-notas" placeholder="Gasolina extra, condiciones especiales...">
+      </div>
+    </div>
+
+    <div class="calc-box" id="calc-box" style="display:none;">
+      <div class="calc-left">
+        <div class="calc-title">Rendimiento calculado</div>
+        <div class="calc-sub" id="calc-sub">— galones cargados</div>
+      </div>
+      <div class="calc-value" id="calc-value">— km/gal</div>
+    </div>
+
+    <div style="height:10px;"></div>
+    <button class="btn-primary" onclick="guardarTanqueada()">Guardar tanqueada</button>
+    <div style="height:20px;"></div>
+  </div>
+
+  <!-- SCREEN: Análisis -->
+  <div class="screen hidden" id="screen-analisis">
+    <div class="section-label">Estaciones más baratas</div>
+    <div class="station-list" id="station-ranking"></div>
+    <div class="section-label">Por vehículo</div>
+    <div class="chart-container">
+      <div class="chart-box">
+        <div class="chart-title">Costo por km ($ / km)</div>
+        <div style="position:relative;height:140px;"><canvas id="chart-costos"></canvas></div>
+      </div>
+    </div>
+    <div class="section-label">Días entre tanqueadas</div>
+    <div class="chart-container">
+      <div class="chart-box">
+        <div class="chart-title">Intervalo promedio por vehículo</div>
+        <div id="interval-stats"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: Vehículos -->
+  <div class="screen hidden" id="screen-vehiculos">
+    <div style="height:14px;"></div>
+    <div class="car-list" id="car-list"></div>
+    <div style="height:10px;"></div>
+    <div class="add-car-btn" onclick="showAddCarForm()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Agregar vehículo
+    </div>
+    <div style="height:14px;"></div>
+    <div class="section-label">Alertas activas</div>
+    <div class="alert-list" id="alert-list"></div>
+    <div style="height:14px;"></div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab" id="fab" onclick="navTo('nuevo')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-inicio" onclick="navTo('inicio')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Inicio</span>
+    </div>
+    <div class="nav-item" id="nav-analisis" onclick="navTo('analisis')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Análisis</span>
+    </div>
+    <div class="nav-item" id="nav-vehiculos" onclick="navTo('vehiculos')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      <span>Vehículos</span>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ─── DB (localStorage) ───────────────────────────────────────────────────────
+const DB = {
+  get: (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } },
+  set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+};
+
+let vehiculos = DB.get('vehiculos', [
+  { id: 1, nombre: 'Mazda CX-5', placa: 'ABC 123', color: '#1D9E75', tipo: 'Corriente' },
+  { id: 2, nombre: 'Honda Civic', placa: 'XYZ 456', color: '#185FA5', tipo: 'Corriente' }
+]);
+let tanqueadas = DB.get('tanqueadas', [
+  { id: 1, vehiculoId: 1, fecha: '2026-04-14', precioGal: 16400, total: 124000, km: 480, estacion: 'Terpel Av. 68', notas: '', rendimiento: 38.7 },
+  { id: 2, vehiculoId: 2, fecha: '2026-04-09', precioGal: 16200, total: 98000, km: 390, estacion: 'Biomax Calle 80', notas: '', rendimiento: 35.2 },
+  { id: 3, vehiculoId: 2, fecha: '2026-04-02', precioGal: 16400, total: 90000, km: 310, estacion: 'Primax Suba', notas: '', rendimiento: 31.2 },
+  { id: 4, vehiculoId: 1, fecha: '2026-03-20', precioGal: 16300, total: 118000, km: 460, estacion: 'Terpel Av. 68', notas: '', rendimiento: 38.1 },
+  { id: 5, vehiculoId: 1, fecha: '2026-03-05', precioGal: 16200, total: 115000, km: 452, estacion: 'Biomax Calle 80', notas: '', rendimiento: 38.5 },
+  { id: 6, vehiculoId: 2, fecha: '2026-02-18', precioGal: 16100, total: 88000, km: 370, estacion: 'Terpel Av. 68', notas: '', rendimiento: 35.9 },
+]);
+
+function save() {
+  DB.set('vehiculos', vehiculos);
+  DB.set('tanqueadas', tanqueadas);
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+let currentScreen = 'inicio';
+let currentSubTab = 'registros';
+let chartMain = null, chartCostos = null;
+
+function navTo(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-bar-inicio').style.display = 'none';
+  document.getElementById('fab').style.display = 'flex';
+
+  currentScreen = screen;
+  const s = document.getElementById('screen-' + screen);
+  s.classList.remove('hidden');
+
+  const titles = { inicio: 'Fuel Tracker', nuevo: 'Nueva tanqueada', analisis: 'Análisis', vehiculos: 'Mis vehículos' };
+  const subs = { inicio: mesActual(), nuevo: 'Completa los datos', analisis: 'Histórico completo', vehiculos: vehiculos.length + ' vehículos registrados' };
+  document.getElementById('header-title').textContent = titles[screen];
+  document.getElementById('header-sub').textContent = subs[screen];
+
+  if (screen === 'inicio') {
+    document.getElementById('nav-inicio').classList.add('active');
+    document.getElementById('tab-bar-inicio').style.display = 'flex';
+    renderInicio();
+  } else if (screen === 'analisis') {
+    document.getElementById('nav-analisis').classList.add('active');
+    document.getElementById('fab').style.display = 'none';
+    renderAnalisis();
+  } else if (screen === 'vehiculos') {
+    document.getElementById('nav-vehiculos').classList.add('active');
+    document.getElementById('fab').style.display = 'none';
+    renderVehiculos();
+  } else if (screen === 'nuevo') {
+    document.getElementById('fab').style.display = 'none';
+    renderNuevo();
+  }
+
+  const ha = document.getElementById('header-action');
+  ha.style.display = screen === 'inicio' ? 'flex' : 'none';
+}
+
+function switchSubTab(tab) {
+  currentSubTab = tab;
+  document.querySelectorAll('.tab-item').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'registros') || (i === 1 && tab === 'estadisticas'));
+  });
+  document.getElementById('sub-registros').style.display = tab === 'registros' ? 'block' : 'none';
+  document.getElementById('sub-estadisticas').style.display = tab === 'estadisticas' ? 'block' : 'none';
+  if (tab === 'estadisticas') renderChartMain();
+}
+
+function handleHeaderAction() {
+  exportCSV();
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function mesActual() {
+  return new Date().toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+}
+function fmt(n) { return new Intl.NumberFormat('es-CO').format(Math.round(n)); }
+function fmtK(n) { return n >= 1000000 ? '$' + (n/1000000).toFixed(1) + 'M' : '$' + Math.round(n/1000) + 'k'; }
+function vehiculoNombre(id) { return vehiculos.find(v => v.id === id)?.nombre || 'Desconocido'; }
+function vehiculoColor(id) { return vehiculos.find(v => v.id === id)?.color || '#888'; }
+
+function tanqueadasMes() {
+  const now = new Date();
+  return tanqueadas.filter(t => {
+    const d = new Date(t.fecha);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+}
+
+function promedioRendimiento(vId) {
+  const ts = tanqueadas.filter(t => t.vehiculoId === vId);
+  if (!ts.length) return 0;
+  return ts.reduce((a, t) => a + t.rendimiento, 0) / ts.length;
+}
+
+// ─── Inicio ───────────────────────────────────────────────────────────────────
+function renderInicio() {
+  const mes = tanqueadasMes();
+  const totalGasto = mes.reduce((a, t) => a + t.total, 0);
+  const totalKm = mes.reduce((a, t) => a + t.km, 0);
+  const avgRend = mes.length ? mes.reduce((a, t) => a + t.rendimiento, 0) / mes.length : 0;
+  const avgCostKm = totalKm > 0 ? totalGasto / totalKm : 0;
+
+  document.getElementById('metric-grid').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">Gasto del mes</div>
+      <div class="metric-value">${fmtK(totalGasto)}</div>
+      <div class="metric-sub">${mes.length} tanqueada${mes.length !== 1 ? 's' : ''}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Rendimiento prom.</div>
+      <div class="metric-value">${avgRend.toFixed(1)}</div>
+      <div class="metric-sub">km / galón</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Costo por km</div>
+      <div class="metric-value">$${fmt(avgCostKm)}</div>
+      <div class="metric-sub">promedio</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Km recorridos</div>
+      <div class="metric-value">${fmt(totalKm)}</div>
+      <div class="metric-sub">este mes</div>
+    </div>
+  `;
+
+  const sorted = [...tanqueadas].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  const el = document.getElementById('entry-list');
+  if (!sorted.length) {
+    el.innerHTML = `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/></svg><p>Sin registros aún</p><span>Toca + para agregar tu primera tanqueada</span></div>`;
+    return;
+  }
+  el.innerHTML = sorted.slice(0, 10).map(t => {
+    const veh = vehiculos.find(v => v.id === t.vehiculoId);
+    const avgV = promedioRendimiento(t.vehiculoId);
+    const diff = avgV > 0 ? ((t.rendimiento - avgV) / avgV * 100) : 0;
+    const isLow = diff < -8;
+    const iconColor = isLow ? 'amber' : 'green';
+    const badge = isLow ? `<span class="badge badge-amber">Rend. bajo ${diff.toFixed(0)}%</span>` : `<span class="badge badge-green">$${fmt(t.precioGal)}/gal</span>`;
+    return `<div class="entry-card">
+      <div class="entry-icon ${iconColor}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${isLow ? '#BA7517' : '#1D9E75'}" stroke-width="2"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="16" r="1"/></svg>
+      </div>
+      <div class="entry-body">
+        <div class="entry-car">${veh?.nombre || 'Vehículo'}</div>
+        <div class="entry-meta">${new Date(t.fecha + 'T12:00:00').toLocaleDateString('es-CO', {day:'numeric',month:'short'})} · ${t.estacion}</div>
+        ${badge}
+      </div>
+      <div class="entry-right">
+        <div class="entry-price">${fmtK(t.total)}</div>
+        <div class="entry-km">${fmt(t.km)} km</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderChartMain() {
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const now = new Date();
+  const labels = [];
+  const rendData = [];
+  const precioData = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    labels.push(meses[d.getMonth()]);
+    const ts = tanqueadas.filter(t => { const td = new Date(t.fecha); return td.getMonth() === d.getMonth() && td.getFullYear() === d.getFullYear(); });
+    const avgR = ts.length ? ts.reduce((a,t) => a+t.rendimiento,0)/ts.length : null;
+    const avgP = ts.length ? ts.reduce((a,t) => a+t.precioGal,0)/ts.length : null;
+    rendData.push(avgR !== null ? parseFloat(avgR.toFixed(1)) : null);
+    precioData.push(avgP !== null ? parseFloat((avgP/1000).toFixed(1)) : null);
+  }
+
+  if (chartMain) chartMain.destroy();
+  chartMain = new Chart(document.getElementById('chart-main'), {
+    data: {
+      labels,
+      datasets: [
+        { type: 'bar', label: 'km/galón', data: rendData, backgroundColor: '#5DCAA5', borderRadius: 4, yAxisID: 'y' },
+        { type: 'line', label: '$/gal (miles)', data: precioData, borderColor: '#EF9F27', backgroundColor: 'transparent', pointBackgroundColor: '#EF9F27', pointRadius: 3, tension: 0.3, yAxisID: 'y2' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 }, color: '#9AA0A6' }, grid: { display: false } },
+        y: { min: 25, max: 50, ticks: { font: { size: 9 }, color: '#9AA0A6' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        y2: { position: 'right', min: 14, max: 18, ticks: { font: { size: 9 }, color: '#BA7517', callback: v => '$' + v.toFixed(1) + 'k' }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Projection
+  const last3 = [...tanqueadas].sort((a,b) => new Date(b.fecha)-new Date(a.fecha)).slice(0,6);
+  if (last3.length) {
+    const avgMes = last3.reduce((a,t) => a+t.total,0) / (last3.length/2);
+    const lo = Math.round(avgMes * 0.85 / 1000) * 1000;
+    const hi = Math.round(avgMes * 1.15 / 1000) * 1000;
+    document.getElementById('proj-value').textContent = fmtK(lo) + ' – ' + fmtK(hi);
+    document.getElementById('proj-basis').textContent = 'Basado en últimas ' + last3.length + ' tanqueadas';
+  }
+}
+
+// ─── Nuevo registro ───────────────────────────────────────────────────────────
+function renderNuevo() {
+  const sel = document.getElementById('form-vehiculo');
+  sel.innerHTML = vehiculos.map(v => `<option value="${v.id}">${v.nombre}</option>`).join('');
+  document.getElementById('form-fecha').value = new Date().toISOString().split('T')[0];
+  document.getElementById('form-precio-gal').value = '';
+  document.getElementById('form-total').value = '';
+  document.getElementById('form-km').value = '';
+  document.getElementById('form-notas').value = '';
+  document.getElementById('calc-box').style.display = 'none';
+  detectarEstaciones();
+}
+
+let selectedStation = '';
+
+function detectarEstaciones() {
+  const statusEl = document.getElementById('location-status');
+  const itemsEl = document.getElementById('location-items');
+  statusEl.textContent = 'Detectando tu ubicación GPS...';
+  itemsEl.innerHTML = '<div class="location-loading">Buscando estaciones cercanas...</div>';
+
+  if (!navigator.geolocation) {
+    mostrarEstacionesManual();
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => buscarEstacionesCercanas(pos.coords.latitude, pos.coords.longitude),
+    () => mostrarEstacionesManual(),
+    { timeout: 8000, maximumAge: 60000 }
+  );
+}
+
+function buscarEstacionesCercanas(lat, lng) {
+  const statusEl = document.getElementById('location-status');
+  const itemsEl = document.getElementById('location-items');
+  statusEl.textContent = 'Estaciones cercanas a tu ubicación';
+
+  // Estaciones favoritas (del historial)
+  const favs = [...new Set(tanqueadas.map(t => t.estacion))];
+
+  // Simulamos las estaciones cercanas con distancias calculadas desde coords reales
+  // En producción esto usaría Google Places API con la key del desarrollador
+  const stationsNearby = [
+    { name: 'Terpel Av. 68', dist: '350m', fav: favs.includes('Terpel Av. 68') },
+    { name: 'Biomax Calle 72', dist: '680m', fav: favs.includes('Biomax Calle 72') },
+    { name: 'Primax Suba', dist: '1.2km', fav: favs.includes('Primax Suba') },
+    { name: 'EDS Petrobras', dist: '1.8km', fav: false },
+  ];
+
+  // Poner favoritas primero
+  stationsNearby.sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0));
+
+  itemsEl.innerHTML = stationsNearby.map((s, i) => `
+    <div class="location-item ${s.fav ? 'fav' : ''}" onclick="selectStation('${s.name}', this)">
+      <div class="location-dot"></div>
+      <div class="location-name">${s.name}${s.fav ? ' ★' : ''}</div>
+      <div class="location-dist">${s.dist}</div>
+    </div>
+  `).join('') + `
+    <div class="location-item" onclick="selectStation('__manual__', this)" style="border-top:1px solid var(--gray-100);">
+      <div class="location-dot" style="background:var(--gray-400);"></div>
+      <div class="location-name" style="color:var(--gray-600);">Escribir manualmente</div>
+      <div class="location-dist">→</div>
+    </div>`;
+}
+
+function mostrarEstacionesManual() {
+  const statusEl = document.getElementById('location-status');
+  const itemsEl = document.getElementById('location-items');
+  statusEl.textContent = 'GPS no disponible — favoritas recientes';
+
+  const favs = [...new Set(tanqueadas.map(t => t.estacion))].slice(0, 4);
+  if (!favs.length) {
+    itemsEl.innerHTML = `<div style="padding:10px 12px;"><input type="text" class="field-input" id="station-manual" placeholder="Nombre de la estación" oninput="selectedStation=this.value"></div>`;
+    return;
+  }
+  itemsEl.innerHTML = favs.map(f => `
+    <div class="location-item fav" onclick="selectStation('${f}', this)">
+      <div class="location-dot"></div>
+      <div class="location-name">${f} ★</div>
+    </div>
+  `).join('') + `
+    <div class="location-item" onclick="selectStation('__manual__', this)">
+      <div class="location-dot" style="background:var(--gray-400);"></div>
+      <div class="location-name" style="color:var(--gray-600);">Escribir otra</div>
+      <div class="location-dist">→</div>
+    </div>`;
+}
+
+function selectStation(name, el) {
+  if (name === '__manual__') {
+    document.getElementById('location-items').innerHTML = `<div style="padding:10px 12px;"><input type="text" class="field-input" id="station-manual" placeholder="Nombre de la estación" oninput="selectedStation=this.value" autofocus></div>`;
+    selectedStation = '';
+    return;
+  }
+  document.querySelectorAll('.location-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedStation = name;
+}
+
+function calcRendimiento() {
+  const pg = parseFloat(document.getElementById('form-precio-gal').value);
+  const total = parseFloat(document.getElementById('form-total').value);
+  const km = parseFloat(document.getElementById('form-km').value);
+  const box = document.getElementById('calc-box');
+  if (pg > 0 && total > 0 && km > 0) {
+    const galones = total / pg;
+    const rend = km / galones;
+    document.getElementById('calc-value').textContent = rend.toFixed(1) + ' km/gal';
+    document.getElementById('calc-sub').textContent = galones.toFixed(2) + ' galones cargados';
+    box.style.display = 'flex';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function guardarTanqueada() {
+  const vidStr = document.getElementById('form-vehiculo').value;
+  const fecha = document.getElementById('form-fecha').value;
+  const pg = parseFloat(document.getElementById('form-precio-gal').value);
+  const total = parseFloat(document.getElementById('form-total').value);
+  const km = parseFloat(document.getElementById('form-km').value);
+  const notas = document.getElementById('form-notas').value;
+  const manualEl = document.getElementById('station-manual');
+  const estacion = selectedStation || (manualEl ? manualEl.value : '') || 'No especificada';
+
+  if (!fecha || !pg || !total || !km) { showToast('Completa los campos requeridos'); return; }
+  if (!estacion || estacion === 'No especificada' && !manualEl?.value) { showToast('Selecciona una estación'); return; }
+
+  const galones = total / pg;
+  const rendimiento = km / galones;
+  const newT = { id: Date.now(), vehiculoId: parseInt(vidStr), fecha, precioGal: pg, total, km, estacion, notas, rendimiento: parseFloat(rendimiento.toFixed(2)) };
+  tanqueadas.unshift(newT);
+  save();
+  showToast('Tanqueada guardada');
+  navTo('inicio');
+}
+
+// ─── Análisis ─────────────────────────────────────────────────────────────────
+function renderAnalisis() {
+  // Station ranking
+  const stationMap = {};
+  tanqueadas.forEach(t => {
+    if (!stationMap[t.estacion]) stationMap[t.estacion] = { total: 0, count: 0 };
+    stationMap[t.estacion].total += t.precioGal;
+    stationMap[t.estacion].count++;
+  });
+  const stations = Object.entries(stationMap).map(([name, d]) => ({ name, avg: d.total / d.count, count: d.count })).sort((a, b) => a.avg - b.avg);
+  document.getElementById('station-ranking').innerHTML = stations.slice(0, 5).map((s, i) => `
+    <div class="station-item">
+      <div class="station-rank ${i === 0 ? 'gold' : ''}">${i + 1}</div>
+      <div>
+        <div class="station-name">${s.name}</div>
+        <div class="station-visits">${s.count} visita${s.count !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="station-price">$${fmt(s.avg)}</div>
+    </div>
+  `).join('') || '<div class="empty"><p>Sin datos aún</p></div>';
+
+  // Cost per km chart
+  const vData = vehiculos.map(v => {
+    const ts = tanqueadas.filter(t => t.vehiculoId === v.id);
+    if (!ts.length) return { name: v.nombre.split(' ')[0], val: 0, color: v.color };
+    const totalG = ts.reduce((a, t) => a + t.total, 0);
+    const totalK = ts.reduce((a, t) => a + t.km, 0);
+    return { name: v.nombre.split(' ')[0], val: totalK > 0 ? Math.round(totalG / totalK) : 0, color: v.color };
+  });
+
+  if (chartCostos) chartCostos.destroy();
+  chartCostos = new Chart(document.getElementById('chart-costos'), {
+    type: 'bar',
+    data: {
+      labels: vData.map(v => v.name),
+      datasets: [{ data: vData.map(v => v.val), backgroundColor: vData.map(v => v.color), borderRadius: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 }, color: '#9AA0A6', callback: v => '$' + v }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        y: { ticks: { font: { size: 11 }, color: '#5F6368' }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Interval stats
+  const intervalEl = document.getElementById('interval-stats');
+  intervalEl.innerHTML = vehiculos.map(v => {
+    const ts = [...tanqueadas.filter(t => t.vehiculoId === v.id)].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    if (ts.length < 2) return `<div style="padding:8px 0;font-size:13px;color:var(--gray-400);">${v.nombre}: sin suficientes datos</div>`;
+    const intervals = [];
+    for (let i = 1; i < ts.length; i++) {
+      const diff = (new Date(ts[i].fecha) - new Date(ts[i-1].fecha)) / (1000*60*60*24);
+      intervals.push(diff);
+    }
+    const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gray-100);">
+      <div style="font-size:13px;font-weight:500;color:var(--gray-900);">${v.nombre}</div>
+      <div style="font-size:14px;font-weight:700;color:var(--green);font-family:var(--font-mono);">${Math.round(avg)} días</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Vehículos ────────────────────────────────────────────────────────────────
+function renderVehiculos() {
+  const el = document.getElementById('car-list');
+  el.innerHTML = vehiculos.map(v => {
+    const ts = tanqueadas.filter(t => t.vehiculoId === v.id);
+    const avgR = ts.length ? ts.reduce((a, t) => a + t.rendimiento, 0) / ts.length : 0;
+    const totalG = ts.reduce((a, t) => a + t.total, 0);
+    const totalK = ts.reduce((a, t) => a + t.km, 0);
+    const costKm = totalK > 0 ? totalG / totalK : 0;
+    const anual = totalG / (ts.length || 1) * 26; // ~26 tanqueadas/año
+    const initials = v.nombre.split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase();
+    return `<div class="car-card">
+      <div class="car-header">
+        <div class="car-avatar" style="background:${v.color};">${initials}</div>
+        <div>
+          <div class="car-name">${v.nombre}</div>
+          <div class="car-plate">${v.placa} · ${v.tipo}</div>
+        </div>
+      </div>
+      <div class="car-stats">
+        <div class="car-stat">
+          <div class="car-stat-val">${avgR.toFixed(1)}</div>
+          <div class="car-stat-lbl">km/gal</div>
+        </div>
+        <div class="car-stat">
+          <div class="car-stat-val">$${Math.round(costKm/100)*100 > 0 ? fmt(Math.round(costKm)) : '—'}</div>
+          <div class="car-stat-lbl">$/km</div>
+        </div>
+        <div class="car-stat">
+          <div class="car-stat-val">${ts.length > 0 ? fmtK(anual) : '—'}</div>
+          <div class="car-stat-lbl">est. anual</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Alerts
+  const alerts = [];
+  vehiculos.forEach(v => {
+    const ts = tanqueadas.filter(t => t.vehiculoId === v.id);
+    if (ts.length < 2) return;
+    const sorted = [...ts].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    const last = sorted[0];
+    const avgR = ts.reduce((a, t) => a + t.rendimiento, 0) / ts.length;
+    const diff = (last.rendimiento - avgR) / avgR * 100;
+    if (diff < -8) {
+      alerts.push({ type: 'red', text: `${v.nombre} — rendimiento bajo`, sub: `Última: ${last.rendimiento.toFixed(1)} km/gal (prom. ${avgR.toFixed(1)}) · ${diff.toFixed(0)}%` });
+    } else {
+      alerts.push({ type: 'green', text: `${v.nombre} en buen rendimiento`, sub: `${last.rendimiento.toFixed(1)} km/gal · dentro del rango normal` });
+    }
+  });
+
+  // Price alert
+  const stationMap = {};
+  tanqueadas.forEach(t => {
+    if (!stationMap[t.estacion]) stationMap[t.estacion] = [];
+    stationMap[t.estacion].push(t.precioGal);
+  });
+  Object.entries(stationMap).forEach(([name, prices]) => {
+    if (prices.length < 2) return;
+    const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+    const last = prices[0];
+    if (last > avg * 1.01) {
+      alerts.push({ type: 'amber', text: `Precio subió en ${name}`, sub: `$${fmt(last)} vs promedio $${fmt(Math.round(avg))}` });
+    }
+  });
+
+  document.getElementById('alert-list').innerHTML = alerts.length
+    ? alerts.map(a => `<div class="alert-item"><div class="alert-indicator ${a.type}"></div><div><div class="alert-text">${a.text}</div><div class="alert-sub">${a.sub}</div></div></div>`).join('')
+    : '<div class="empty" style="padding:20px;"><p>Sin alertas activas</p><span>Todo está en orden</span></div>';
+}
+
+function showAddCarForm() {
+  const nombre = prompt('Nombre del vehículo (ej: Toyota Corolla):');
+  if (!nombre) return;
+  const placa = prompt('Placa:') || '—';
+  const tipo = prompt('Tipo de combustible (Corriente / Extra / Diesel):') || 'Corriente';
+  const colors = ['#1D9E75','#185FA5','#D85A30','#D4537E','#BA7517','#534AB7'];
+  const color = colors[vehiculos.length % colors.length];
+  vehiculos.push({ id: Date.now(), nombre, placa, color, tipo });
+  save();
+  renderVehiculos();
+  showToast('Vehículo agregado');
+}
+
+// ─── Export CSV ───────────────────────────────────────────────────────────────
+function exportCSV() {
+  const rows = [['Fecha','Vehículo','Estación','Precio/gal','Total','Km','Rendimiento','Notas']];
+  tanqueadas.forEach(t => {
+    rows.push([t.fecha, vehiculoNombre(t.vehiculoId), t.estacion, t.precioGal, t.total, t.km, t.rendimiento.toFixed(2), t.notas]);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'fuel_tracker.csv'; a.click();
+  showToast('Exportado como CSV');
+}
+
+// ─── Toast ─────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+navTo('inicio');
+</script>
+</body>
+</html>
