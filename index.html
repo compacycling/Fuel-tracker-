@@ -307,7 +307,30 @@ html,body{height:100%;overflow:hidden;background:var(--surf);font-family:var(--f
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+
+    reg.onupdatefound = () => {
+      const newWorker = reg.installing;
+
+      newWorker.onstatechange = () => {
+        if (newWorker.state === 'installed') {
+          if (navigator.serviceWorker.controller) {
+
+            const t = document.getElementById('toast');
+            t.textContent = 'Nueva versión disponible 🚀 (toca para actualizar)';
+            t.classList.add('show');
+
+            t.onclick = () => {
+              window.location.reload();
+            };
+          }
+        }
+      };
+    };
+
+  }).catch(()=>{});
+}
 
 const DB={
   get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d;}catch{return d;}},
